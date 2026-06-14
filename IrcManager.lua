@@ -183,27 +183,6 @@ local function fmtCountdown(s)
     return string.format("Purge in: %02d:%02d:%02d", math.floor(s / 3600), math.floor((s % 3600) / 60), s % 60)
 end
 
-local flowTags = {}
-
-local function getTag(player)
-    if not flowTags[player] then
-        local t = Drawing.new("Text")
-        t.Text = "flow"
-        t.Size = 13
-        t.Font = Drawing.Fonts.Plex
-        t.Color = Color3.fromRGB(125, 86, 243)
-        t.Outline = true
-        t.OutlineColor = Color3.fromRGB(0, 0, 0)
-        t.Center = true
-        t.Visible = false
-        flowTags[player] = t
-    end
-    return flowTags[player]
-end
-
-plrs.PlayerRemoving:Connect(function(p)
-    if flowTags[p] then flowTags[p]:Remove(); flowTags[p] = nil end
-end)
 
 task.spawn(function()
     api("POST", "/heartbeat", { username = lp.Name, jobId = game.JobId, gameId = tostring(game.GameId), discordId = discordId })
@@ -270,6 +249,7 @@ task.spawn(function()
             fresh[name] = true
         end
         flowUsernames = fresh
+        getgenv().FLOW_USERNAMES = flowUsernames
     end
 end)
 
@@ -294,18 +274,6 @@ end)
 
 rs.Heartbeat:Connect(function()
     countdownLbl:SetText(fmtCountdown(secsUntilPurge()))
-    local espOn = getgenv().FLOW_ESP_ENABLED == true
-    for _, player in ipairs(plrs:GetPlayers()) do
-        if player == lp then continue end
-        local tag = getTag(player)
-        if not espOn or not flowUsernames[player.Name] then tag.Visible = false; continue end
-        local getHeadPos = getgenv().FLOW_GET_HEAD_POS
-        local headPos = getHeadPos and getHeadPos(player.Name)
-        if not headPos then tag.Visible = false; continue end
-        local pos, onscreen = cam:WorldToViewportPoint(headPos + Vector3.new(0, 1.5, 0))
-        tag.Visible = onscreen
-        if onscreen then tag.Position = Vector2.new(pos.X, pos.Y) end
-    end
 end)
 
 local motds = {
