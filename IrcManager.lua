@@ -47,6 +47,7 @@ local InfoGroup = IrcTab:AddRightGroupbox("Info")
 local chat = ChatGroup:AddChatArea(300)
 
 local nameCache = {}
+local myUsername = nil
 
 local function resolveId(id, cb)
     if not id or id == "" or id == "n/a" then cb(nil); return end
@@ -54,14 +55,14 @@ local function resolveId(id, cb)
     task.spawn(function()
         local data = api("GET", "/discord/resolve/" .. id)
         local name = data and data.username
-        if name then
-            name = name:sub(1, 15)
-        else
-            name = id:sub(1, 15)
-        end
+        name = name and name:sub(1, 15) or id:sub(1, 15)
         nameCache[id] = name
         cb(name)
     end)
+end
+
+if discordId ~= "n/a" then
+    resolveId(discordId, function(name) myUsername = name end)
 end
 
 local goldenIds = { ["1285058734858440806"] = true, ["1284644914226790490"] = true }
@@ -70,14 +71,11 @@ local function devTag()
     return '<b><font color="rgb(139,0,0)">DEV</font></b>'
 end
 
-local function addChatLine(discordIdVal, body, isSelf)
+local function addChatLine(discordIdVal, discordUsernameVal, body, isSelf)
     if not discordIdVal or discordIdVal == "" or discordIdVal == "n/a" then
         chat:AddMessage(devTag(), body)
     else
-        local name = nameCache[discordIdVal] or discordIdVal:sub(1, 15)
-        if not nameCache[discordIdVal] then
-            resolveId(discordIdVal, function() end)
-        end
+        local name = discordUsernameVal or nameCache[discordIdVal] or discordIdVal:sub(1, 15)
         if goldenIds[discordIdVal] then
             chat:AddMessage(nil, '<font color="rgb(255,193,7)">[' .. name .. ']</font> ' .. body)
         else
@@ -113,7 +111,7 @@ ChatGroup:AddChatInput("irc_input", {
             end
         else
             task.spawn(function()
-                local ok = api("POST", "/chat", { username = lp.Name, discordId = discordId, body = txt })
+                local ok = api("POST", "/chat", { username = lp.Name, discordId = discordId, discordUsername = myUsername, body = txt })
                 if not ok then
                     chat:AddMessage(nil, "* failed to send.", Color3.fromRGB(200, 80, 80))
                 end
@@ -268,7 +266,7 @@ task.spawn(function()
         for _, m in ipairs(data.messages or {}) do
             if m.id > lastId then
                 lastId = m.id
-                addChatLine(m.discordId, m.body, m.discordId == discordId)
+                addChatLine(m.discordId, m.discordUsername, m.body, m.discordId == discordId)
             end
         end
     end
