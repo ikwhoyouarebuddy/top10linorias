@@ -283,9 +283,11 @@ end)
 
 rs.Heartbeat:Connect(function()
     countdownLbl:SetText(fmtCountdown(secsUntilPurge()))
+    local espOn = getgenv().FLOW_ESP_ENABLED == true
     for _, player in ipairs(plrs:GetPlayers()) do
         if player == lp then continue end
         local tag = getTag(player)
+        if not espOn then tag.Visible = false; continue end
         local u = knownUsers[player.Name]
         if not u or u.jobId ~= game.JobId then tag.Visible = false; continue end
         local head = player.Character and player.Character:FindFirstChild("Head")
