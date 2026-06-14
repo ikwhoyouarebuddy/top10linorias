@@ -299,9 +299,10 @@ rs.Heartbeat:Connect(function()
         if player == lp then continue end
         local tag = getTag(player)
         if not espOn or not flowUsernames[player.Name] then tag.Visible = false; continue end
-        local head = player.Character and player.Character:FindFirstChild("Head")
-        if not head then tag.Visible = false; continue end
-        local pos, onscreen = cam:WorldToViewportPoint(head.Position + Vector3.new(0, 1.8, 0))
+        local getHeadPos = getgenv().FLOW_GET_HEAD_POS
+        local headPos = getHeadPos and getHeadPos(player.Name)
+        if not headPos then tag.Visible = false; continue end
+        local pos, onscreen = cam:WorldToViewportPoint(headPos + Vector3.new(0, 1.5, 0))
         tag.Visible = onscreen
         if onscreen then tag.Position = Vector2.new(pos.X, pos.Y) end
     end
