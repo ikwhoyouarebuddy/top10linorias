@@ -73,10 +73,6 @@ end
 local function addChatLine(discordIdVal, body, isSelf)
     if not discordIdVal or discordIdVal == "" or discordIdVal == "n/a" then
         chat:AddMessage(devTag(), body)
-    elseif goldenIds[discordIdVal] then
-        resolveId(discordIdVal, function(name)
-            chat:AddMessage(nil, '<font color="rgb(255,193,7)">[' .. name .. ']</font> ' .. body)
-        end)
     else
         resolveId(discordIdVal, function(name)
             local color = isSelf and Color3.fromRGB(120, 180, 255) or Color3.fromRGB(200, 200, 200)
