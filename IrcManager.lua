@@ -228,14 +228,24 @@ task.spawn(function()
             end
         end
 
+        local function displayName(u)
+            if not u.discordId or u.discordId == "" or u.discordId == "n/a" then return "DEV" end
+            return nameCache[u.discordId] or u.discordId:sub(1, 15)
+        end
+
         for name, u in pairs(fresh) do
             if not knownUsers[name] and name ~= lp.Name then
-                chat:AddMessage(nil, "* " .. name .. " online" .. (u.jobId == game.JobId and " [here]" or ""), Color3.fromRGB(100, 200, 100))
+                local dn = displayName(u)
+                resolveId(u.discordId, function(resolved)
+                    nameCache[u.discordId] = resolved
+                end)
+                chat:AddMessage(nil, "* " .. dn .. " online" .. (u.jobId == game.JobId and " [here]" or ""), Color3.fromRGB(100, 200, 100))
             end
         end
         for name in pairs(knownUsers) do
             if not fresh[name] and name ~= lp.Name then
-                chat:AddMessage(nil, "* " .. name .. " offline", Color3.fromRGB(200, 100, 100))
+                local dn = displayName(knownUsers[name])
+                chat:AddMessage(nil, "* " .. dn .. " offline", Color3.fromRGB(200, 100, 100))
             end
         end
 
@@ -247,7 +257,9 @@ task.spawn(function()
 
         local sameList = {}
         for n, u in pairs(fresh) do
-            if u.jobId == game.JobId and n ~= lp.Name then sameList[#sameList+1] = n end
+            if u.jobId == game.JobId and n ~= lp.Name then
+                sameList[#sameList+1] = displayName(u)
+            end
         end
         sameServerLbl:SetText(#sameList > 0 and table.concat(sameList, ", ") or "none")
     end
