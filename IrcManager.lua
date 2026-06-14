@@ -168,6 +168,7 @@ if isAdmin then
 end
 
 local knownUsers = {}
+local flowUsernames = {}
 local lastId = 0
 local lastPurgeCount = 0
 
@@ -222,10 +223,10 @@ task.spawn(function()
 
         local fresh = {}
         for _, u in ipairs(users) do
-            fresh[u.username] = u
-            if u.discordId and u.discordId ~= "" and u.discordId ~= "n/a" and not nameCache[u.discordId] then
-                resolveId(u.discordId, function() end)
-            end
+            local key = (u.discordId and u.discordId ~= "" and u.discordId ~= "n/a") and u.discordId or nil
+            if not key then continue end
+            fresh[key] = u
+            if not nameCache[key] then resolveId(key, function() end) end
         end
 
         local function displayName(u)
@@ -233,16 +234,14 @@ task.spawn(function()
             return nameCache[u.discordId] or u.discordId:sub(1, 15)
         end
 
-        for name, u in pairs(fresh) do
-            if not knownUsers[name] and name ~= lp.Name then
-                local dn = displayName(u)
-                chat:AddMessage(nil, "* " .. dn .. " online" .. (u.jobId == game.JobId and " [here]" or ""), Color3.fromRGB(100, 200, 100))
+        for id, u in pairs(fresh) do
+            if not knownUsers[id] and id ~= discordId then
+                chat:AddMessage(nil, "* " .. displayName(u) .. " online" .. (u.jobId == game.JobId and " [here]" or ""), Color3.fromRGB(100, 200, 100))
             end
         end
-        for name in pairs(knownUsers) do
-            if not fresh[name] and name ~= lp.Name then
-                local dn = displayName(knownUsers[name])
-                chat:AddMessage(nil, "* " .. dn .. " offline", Color3.fromRGB(200, 100, 100))
+        for id in pairs(knownUsers) do
+            if not fresh[id] and id ~= discordId then
+                chat:AddMessage(nil, "* " .. displayName(knownUsers[id]) .. " offline", Color3.fromRGB(200, 100, 100))
             end
         end
 
@@ -250,15 +249,27 @@ task.spawn(function()
 
         local count = 0
         for _ in pairs(fresh) do count += 1 end
-        onlineLbl:SetText("Online: " .. count)
+        onlineLbl:SetText("Online: " .. (count + 1))
 
         local sameList = {}
-        for n, u in pairs(fresh) do
-            if u.jobId == game.JobId and n ~= lp.Name then
+        for id, u in pairs(fresh) do
+            if u.jobId == game.JobId and id ~= discordId then
                 sameList[#sameList+1] = displayName(u)
             end
         end
         sameServerLbl:SetText(#sameList > 0 and table.concat(sameList, ", ") or "none")
+    end
+end)
+
+task.spawn(function()
+    while task.wait(5) do
+        local data = api("GET", "/flowusers?jobId=" .. game.JobId)
+        if not data or not data.usernames then continue end
+        local fresh = {}
+        for _, name in ipairs(data.usernames) do
+            fresh[name] = true
+        end
+        flowUsernames = fresh
     end
 end)
 
@@ -287,9 +298,7 @@ rs.Heartbeat:Connect(function()
     for _, player in ipairs(plrs:GetPlayers()) do
         if player == lp then continue end
         local tag = getTag(player)
-        if not espOn then tag.Visible = false; continue end
-        local u = knownUsers[player.Name]
-        if not u or u.jobId ~= game.JobId then tag.Visible = false; continue end
+        if not espOn or not flowUsernames[player.Name] then tag.Visible = false; continue end
         local head = player.Character and player.Character:FindFirstChild("Head")
         if not head then tag.Visible = false; continue end
         local pos, onscreen = cam:WorldToViewportPoint(head.Position + Vector3.new(0, 1.8, 0))
