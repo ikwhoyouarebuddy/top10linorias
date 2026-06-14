@@ -297,7 +297,7 @@ local motds = {
     "discord.gg/flowcc",
     "Hi, federal agent",
 }
-chat:AddMessage(nil, "* connecting.. " .. motds[math.random(#motds)], Color3.fromRGB(125, 86, 243))
+chat:AddMessage(nil, "* " .. motds[math.random(#motds)], Color3.fromRGB(125, 86, 243))
 if isAdmin then
     chat:AddMessage(nil, "* admin: /purge  /mute &lt;id&gt;  /unmute &lt;id&gt;", Color3.fromRGB(180, 130, 255))
 end
