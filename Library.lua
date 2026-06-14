@@ -1870,6 +1870,8 @@ do
 
         function ChatArea:AddMessage(username, body, color)
             order += 1
+            local atBottom = Scroll.CanvasPosition.Y >= Scroll.AbsoluteCanvasSize.Y - Scroll.AbsoluteSize.Y - 16
+
             Library:Create('TextLabel', {
                 Size = UDim2.new(1, 0, 0, 0);
                 AutomaticSize = Enum.AutomaticSize.Y;
@@ -1885,9 +1887,11 @@ do
                 ZIndex = 8;
                 Parent = Scroll;
             })
-            task.defer(function()
-                Scroll.CanvasPosition = Vector2.new(0, math.huge)
-            end)
+            if atBottom then
+                task.defer(function()
+                    Scroll.CanvasPosition = Vector2.new(0, math.huge)
+                end)
+            end
             local lines = {}
             for _, c in Scroll:GetChildren() do
                 if c:IsA('TextLabel') then lines[#lines+1] = c end
