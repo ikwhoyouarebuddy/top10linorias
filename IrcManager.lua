@@ -287,7 +287,17 @@ rs.Heartbeat:Connect(function()
     end
 end)
 
-chat:AddMessage(nil, "* connected to flow network", Color3.fromRGB(125, 86, 243))
+local motds = {
+    "got so bored i made an irc.. w updates ❤️‍🩹",
+    "this feature is genuinely fucking useless",
+    "could you paste this?",
+    "priv9 patch when?",
+    "The axal exit scam was something we ALL saw coming..",
+    "Malignant may be the best website of all time??",
+    "discord.gg/flowcc",
+    "Hi, federal agent",
+}
+chat:AddMessage(nil, "* connecting.. " .. motds[math.random(#motds)], Color3.fromRGB(125, 86, 243))
 if isAdmin then
     chat:AddMessage(nil, "* admin: /purge  /mute &lt;id&gt;  /unmute &lt;id&gt;", Color3.fromRGB(180, 130, 255))
 end
