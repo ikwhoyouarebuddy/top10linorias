@@ -1814,6 +1814,196 @@ do
         return Textbox;
     end;
 
+    function Funcs:AddChatArea(Height)
+        Height = Height or 160
+        local Groupbox = self
+        local Container = Groupbox.Container
+
+        local Outer = Library:Create('Frame', {
+            BackgroundColor3 = Color3.new(0, 0, 0);
+            BorderColor3 = Color3.new(0, 0, 0);
+            Size = UDim2.new(1, -4, 0, Height);
+            ZIndex = 5;
+            Parent = Container;
+        })
+
+        local Inner = Library:Create('Frame', {
+            BackgroundColor3 = Library.BackgroundColor;
+            BorderColor3 = Library.OutlineColor;
+            BorderMode = Enum.BorderMode.Inset;
+            Size = UDim2.new(1, 0, 1, 0);
+            ZIndex = 6;
+            Parent = Outer;
+        })
+
+        Library:AddToRegistry(Outer, { BorderColor3 = 'Black' })
+        Library:AddToRegistry(Inner, { BackgroundColor3 = 'BackgroundColor'; BorderColor3 = 'OutlineColor' })
+
+        local Scroll = Library:Create('ScrollingFrame', {
+            BackgroundTransparency = 1;
+            BorderSizePixel = 0;
+            Size = UDim2.new(1, 0, 1, 0);
+            ScrollBarThickness = 3;
+            ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80);
+            AutomaticCanvasSize = Enum.AutomaticSize.Y;
+            CanvasSize = UDim2.new(0, 0, 0, 0);
+            ZIndex = 7;
+            Parent = Inner;
+        })
+
+        Library:Create('UIListLayout', {
+            SortOrder = Enum.SortOrder.LayoutOrder;
+            Padding = UDim.new(0, 1);
+            Parent = Scroll;
+        })
+
+        Library:Create('UIPadding', {
+            PaddingLeft = UDim.new(0, 4);
+            PaddingRight = UDim.new(0, 4);
+            PaddingTop = UDim.new(0, 3);
+            PaddingBottom = UDim.new(0, 3);
+            Parent = Scroll;
+        })
+
+        local ChatArea = {}
+        local order = 0
+
+        function ChatArea:AddMessage(username, body, color)
+            order += 1
+            Library:Create('TextLabel', {
+                Size = UDim2.new(1, 0, 0, 0);
+                AutomaticSize = Enum.AutomaticSize.Y;
+                BackgroundTransparency = 1;
+                TextColor3 = color or Library.FontColor;
+                TextSize = 12;
+                Font = Library.Font;
+                TextXAlignment = Enum.TextXAlignment.Left;
+                TextWrapped = true;
+                RichText = true;
+                Text = username and ('[' .. username .. '] ' .. body) or body;
+                LayoutOrder = order;
+                ZIndex = 8;
+                Parent = Scroll;
+            })
+            task.defer(function()
+                Scroll.CanvasPosition = Vector2.new(0, math.huge)
+            end)
+            local lines = {}
+            for _, c in Scroll:GetChildren() do
+                if c:IsA('TextLabel') then lines[#lines+1] = c end
+            end
+            if #lines > 150 then
+                table.sort(lines, function(a, b) return a.LayoutOrder < b.LayoutOrder end)
+                lines[1]:Destroy()
+            end
+        end
+
+        function ChatArea:Clear()
+            for _, c in Scroll:GetChildren() do
+                if c:IsA('TextLabel') then c:Destroy() end
+            end
+        end
+
+        Groupbox:AddBlank(5)
+        Groupbox:Resize()
+
+        return ChatArea
+    end;
+
+    function Funcs:AddChatInput(Idx, Info)
+        local Textbox = {
+            Value = '';
+            Type = 'Input';
+            Callback = Info.Callback or function() end;
+        }
+
+        local Groupbox = self
+        local Container = Groupbox.Container
+
+        local TextBoxOuter = Library:Create('Frame', {
+            BackgroundColor3 = Color3.new(0, 0, 0);
+            BorderColor3 = Color3.new(0, 0, 0);
+            Size = UDim2.new(1, -4, 0, 20);
+            ZIndex = 5;
+            Parent = Container;
+        })
+
+        local TextBoxInner = Library:Create('Frame', {
+            BackgroundColor3 = Library.MainColor;
+            BorderColor3 = Library.OutlineColor;
+            BorderMode = Enum.BorderMode.Inset;
+            Size = UDim2.new(1, 0, 1, 0);
+            ZIndex = 6;
+            Parent = TextBoxOuter;
+        })
+
+        Library:AddToRegistry(TextBoxInner, { BackgroundColor3 = 'MainColor'; BorderColor3 = 'OutlineColor' })
+
+        Library:OnHighlight(TextBoxOuter, TextBoxOuter,
+            { BorderColor3 = 'AccentColor' },
+            { BorderColor3 = 'Black' }
+        )
+
+        Library:Create('UIGradient', {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(212, 212, 212))
+            });
+            Rotation = 90;
+            Parent = TextBoxInner;
+        })
+
+        local BoxContainer = Library:Create('Frame', {
+            BackgroundTransparency = 1;
+            ClipsDescendants = true;
+            Position = UDim2.new(0, 5, 0, 0);
+            Size = UDim2.new(1, -5, 1, 0);
+            ZIndex = 7;
+            Parent = TextBoxInner;
+        })
+
+        local Box = Library:Create('TextBox', {
+            BackgroundTransparency = 1;
+            Position = UDim2.fromOffset(0, 0);
+            Size = UDim2.fromScale(5, 1);
+            Font = Library.Font;
+            PlaceholderColor3 = Color3.fromRGB(190, 190, 190);
+            PlaceholderText = Info.Placeholder or '';
+            Text = '';
+            TextColor3 = Library.FontColor;
+            TextSize = 14;
+            TextStrokeTransparency = 0;
+            TextXAlignment = Enum.TextXAlignment.Left;
+            ZIndex = 7;
+            Parent = BoxContainer;
+        })
+
+        Library:ApplyTextStroke(Box)
+        Library:AddToRegistry(Box, { TextColor3 = 'FontColor' })
+
+        function Textbox:SetValue(Text)
+            Textbox.Value = Text
+            Box.Text = Text
+        end
+
+        Box.FocusLost:Connect(function(enter)
+            if not enter then return end
+            local txt = Box.Text
+            Box.Text = ''
+            Textbox.Value = ''
+            if txt ~= '' then
+                Library:SafeCallback(Textbox.Callback, txt)
+            end
+        end)
+
+        Groupbox:AddBlank(5)
+        Groupbox:Resize()
+
+        Options[Idx] = Textbox
+
+        return Textbox
+    end;
+
     function Funcs:AddToggle(Idx, Info)
         assert(Info.Text, 'AddInput: Missing `Text` string.')
 
@@ -3306,6 +3496,16 @@ function Library:CreateWindow(...)
 
         function Tab:AddRightGroupbox(Name)
             return Tab:AddGroupbox({ Side = 2; Name = Name; });
+        end;
+
+        function Tab:SetColumnLayout(leftFrac, rightFrac)
+            leftFrac = leftFrac or 0.5
+            rightFrac = rightFrac or 0.5
+            LeftSide.Size = UDim2.new(leftFrac, -10, 0, 507 + 2)
+            MiddleSide.Size = UDim2.new(0, 0, 0, 0)
+            MiddleSide.Visible = false
+            RightSide.Position = UDim2.new(leftFrac, 4, 0, 8 - 1)
+            RightSide.Size = UDim2.new(rightFrac, -10, 0, 507 + 2)
         end;
 
         function Tab:AddTabbox(Info)
