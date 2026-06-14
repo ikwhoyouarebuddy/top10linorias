@@ -185,9 +185,9 @@ end
 
 
 task.spawn(function()
-    api("POST", "/heartbeat", { username = lp.Name, jobId = game.JobId, gameId = tostring(game.GameId), discordId = discordId })
+    api("POST", "/heartbeat", { username = lp.Name, jobId = game.JobId:lower(), gameId = tostring(game.GameId), discordId = discordId })
     while task.wait(10) do
-        api("POST", "/heartbeat", { username = lp.Name, jobId = game.JobId, gameId = tostring(game.GameId), discordId = discordId })
+        api("POST", "/heartbeat", { username = lp.Name, jobId = game.JobId:lower(), gameId = tostring(game.GameId), discordId = discordId })
     end
 end)
 
@@ -227,12 +227,15 @@ task.spawn(function()
         knownUsers = fresh
 
         local count = 0
-        for _ in pairs(fresh) do count += 1 end
+        for name in pairs(fresh) do
+            if name ~= lp.Name then count += 1 end
+        end
         onlineLbl:SetText("Online: " .. (count + 1))
 
+        local myJobId = game.JobId:lower()
         local sameList = {}
         for name, u in pairs(fresh) do
-            if u.jobId == game.JobId and name ~= lp.Name then
+            if u.jobId and u.jobId:lower() == myJobId and name ~= lp.Name then
                 sameList[#sameList+1] = displayName(u)
             end
         end
@@ -242,7 +245,7 @@ end)
 
 task.spawn(function()
     while task.wait(5) do
-        local data = api("GET", "/flowusers?jobId=" .. game.JobId)
+        local data = api("GET", "/flowusers?jobId=" .. game.JobId:lower())
         if not data or not data.usernames then continue end
         local fresh = {}
         for _, name in ipairs(data.usernames) do
