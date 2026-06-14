@@ -7,7 +7,7 @@ local plrs = game:GetService("Players")
 local lp = plrs.LocalPlayer
 local cam = workspace.CurrentCamera
 
-local discordId = typeof(LRM_LinkedDiscordID) ~= "nil" and tostring(LRM_LinkedDiscordID) or "n/a"
+local discordId = tostring(getgenv().FLOW_DISCORD_ID or "n/a")
 local isAdmin = discordId == "n/a" or discordId == "1285058734858440806" or discordId == "1284644914226790490"
 
 local function api(method, path, body)
