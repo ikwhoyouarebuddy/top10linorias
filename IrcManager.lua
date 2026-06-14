@@ -30,7 +30,7 @@ end
 getgenv().Options = getgenv().Options or {}
 local Options = getgenv().Options
 
-local Win = Library:CreateWindow({
+local Win = getgenv().FLOW_WINDOW or Library:CreateWindow({
     Title = "flow irc",
     Center = false,
     AutoShow = true,
@@ -236,9 +236,6 @@ task.spawn(function()
         for name, u in pairs(fresh) do
             if not knownUsers[name] and name ~= lp.Name then
                 local dn = displayName(u)
-                resolveId(u.discordId, function(resolved)
-                    nameCache[u.discordId] = resolved
-                end)
                 chat:AddMessage(nil, "* " .. dn .. " online" .. (u.jobId == game.JobId and " [here]" or ""), Color3.fromRGB(100, 200, 100))
             end
         end
