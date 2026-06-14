@@ -8,7 +8,7 @@ local lp = plrs.LocalPlayer
 local cam = workspace.CurrentCamera
 
 local discordId = tostring(getgenv().FLOW_DISCORD_ID or "n/a")
-local isAdmin = discordId == "n/a" or discordId == "1285058734858440806" or discordId == "1284644914226790490"
+local isAdmin = discordId == "1285058734858440806" or discordId == "1284644914226790490"
 
 local function api(method, path, body)
     local ok, res = pcall(request, {
@@ -64,6 +64,8 @@ local function resolveId(id, cb)
     end)
 end
 
+local goldenIds = { ["1285058734858440806"] = true, ["1284644914226790490"] = true }
+
 local function devTag()
     return '<b><font color="rgb(139,0,0)">DEV</font></b>'
 end
@@ -71,6 +73,10 @@ end
 local function addChatLine(discordIdVal, body, isSelf)
     if not discordIdVal or discordIdVal == "" or discordIdVal == "n/a" then
         chat:AddMessage(devTag(), body)
+    elseif goldenIds[discordIdVal] then
+        resolveId(discordIdVal, function(name)
+            chat:AddMessage(nil, '<font color="rgb(255,193,7)">[' .. name .. ']</font> ' .. body)
+        end)
     else
         resolveId(discordIdVal, function(name)
             local color = isSelf and Color3.fromRGB(120, 180, 255) or Color3.fromRGB(200, 200, 200)
@@ -285,4 +291,3 @@ chat:AddMessage(nil, "* connected to flow network", Color3.fromRGB(125, 86, 243)
 if isAdmin then
     chat:AddMessage(nil, "* admin: /purge  /mute &lt;id&gt;  /unmute &lt;id&gt;", Color3.fromRGB(180, 130, 255))
 end
-
