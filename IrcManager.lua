@@ -223,10 +223,10 @@ task.spawn(function()
 
         local fresh = {}
         for _, u in ipairs(users) do
-            local key = (u.discordId and u.discordId ~= "" and u.discordId ~= "n/a") and u.discordId or nil
-            if not key then continue end
-            fresh[key] = u
-            if not nameCache[key] then resolveId(key, function() end) end
+            fresh[u.username] = u
+            if u.discordId and u.discordId ~= "" and u.discordId ~= "n/a" and not nameCache[u.discordId] then
+                resolveId(u.discordId, function() end)
+            end
         end
 
         local function displayName(u)
@@ -234,14 +234,14 @@ task.spawn(function()
             return nameCache[u.discordId] or u.discordId:sub(1, 15)
         end
 
-        for id, u in pairs(fresh) do
-            if not knownUsers[id] and id ~= discordId then
+        for name, u in pairs(fresh) do
+            if not knownUsers[name] and name ~= lp.Name then
                 chat:AddMessage(nil, "* " .. displayName(u) .. " online" .. (u.jobId == game.JobId and " [here]" or ""), Color3.fromRGB(100, 200, 100))
             end
         end
-        for id in pairs(knownUsers) do
-            if not fresh[id] and id ~= discordId then
-                chat:AddMessage(nil, "* " .. displayName(knownUsers[id]) .. " offline", Color3.fromRGB(200, 100, 100))
+        for name in pairs(knownUsers) do
+            if not fresh[name] and name ~= lp.Name then
+                chat:AddMessage(nil, "* " .. displayName(knownUsers[name]) .. " offline", Color3.fromRGB(200, 100, 100))
             end
         end
 
@@ -252,8 +252,8 @@ task.spawn(function()
         onlineLbl:SetText("Online: " .. (count + 1))
 
         local sameList = {}
-        for id, u in pairs(fresh) do
-            if u.jobId == game.JobId and id ~= discordId then
+        for name, u in pairs(fresh) do
+            if u.jobId == game.JobId and name ~= lp.Name then
                 sameList[#sameList+1] = displayName(u)
             end
         end
