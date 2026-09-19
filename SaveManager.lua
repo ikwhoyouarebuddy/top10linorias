@@ -264,7 +264,7 @@ local SaveManager = {} do
 		section:AddButton('Set as autoload', function()
 			local name = Options.SaveManager_ConfigList.Value
 			writefile(self.Folder .. '/settings/autoload.txt', name)
-			SaveManager.AutoloadLabel:SetText('' .. name)
+			SaveManager.AutoloadLabel:SetText('Autoloaded: ' .. name)
 			self.Library:Notify(string.format('Set %q to auto load', name))
 		end)
 
@@ -272,7 +272,7 @@ local SaveManager = {} do
 
 		if isfile(self.Folder .. '/settings/autoload.txt') then
 			local name = readfile(self.Folder .. '/settings/autoload.txt')
-			SaveManager.AutoloadLabel:SetText('' .. name)
+			SaveManager.AutoloadLabel:SetText('Autoloaded: ' .. name)
 		end
 
 		SaveManager:SetIgnoreIndexes({ 'SaveManager_ConfigList', 'SaveManager_ConfigName' })
