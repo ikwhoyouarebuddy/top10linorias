@@ -1464,9 +1464,32 @@ do
             Parent = Container;
         });
 
-        if DoesWrap then
-            local Y = select(2, Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
+        -- AbsoluteSize is still 0 on the frame the label is parented, so fall back
+        -- to the container and retry next frame rather than wrapping against 0 width.
+        local function ResizeWrapped()
+            local Width = TextLabel.AbsoluteSize.X;
+
+            if Width <= 0 then
+                Width = Container.AbsoluteSize.X - 4;
+            end;
+
+            if Width <= 0 then
+                return false;
+            end;
+
+            local Y = select(2, Library:GetTextBounds(TextLabel.Text, Library.Font, 14, Vector2.new(Width, math.huge)))
             TextLabel.Size = UDim2.new(1, -4, 0, Y)
+
+            return true;
+        end;
+
+        if DoesWrap then
+            if not ResizeWrapped() then
+                task.defer(function()
+                    ResizeWrapped();
+                    Groupbox:Resize();
+                end);
+            end;
         else
             Library:Create('UIListLayout', {
                 Padding = UDim.new(0, 4);
@@ -1483,9 +1506,11 @@ do
         function Label:SetText(Text)
             TextLabel.Text = Text
 
-            if DoesWrap then
-                local Y = select(2, Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
-                TextLabel.Size = UDim2.new(1, -4, 0, Y)
+            if DoesWrap and (not ResizeWrapped()) then
+                task.defer(function()
+                    ResizeWrapped();
+                    Groupbox:Resize();
+                end);
             end
 
             Groupbox:Resize();
