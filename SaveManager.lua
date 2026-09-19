@@ -190,6 +190,9 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:LoadAutoloadConfig()
+		if self.AutoloadDone then return end
+		self.AutoloadDone = true
+
 		if isfile(self.Folder .. '/settings/autoload.txt') then
 			local name = readfile(self.Folder .. '/settings/autoload.txt')
 
@@ -273,6 +276,8 @@ local SaveManager = {} do
 		end
 
 		SaveManager:SetIgnoreIndexes({ 'SaveManager_ConfigList', 'SaveManager_ConfigName' })
+
+		task.defer(function() self:LoadAutoloadConfig() end)
 	end
 
 	SaveManager:BuildFolderTree()
