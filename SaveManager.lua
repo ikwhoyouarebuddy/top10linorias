@@ -229,7 +229,9 @@ local SaveManager = {} do
 
 			Options.SaveManager_ConfigList:SetValues(self:RefreshConfigList())
 			Options.SaveManager_ConfigList:SetValue(nil)
-		end):AddButton('Load config', function()
+		end)
+
+		section:AddButton({ Text = 'Load config', DoubleClick = true, Func = function()
 			local name = Options.SaveManager_ConfigList.Value
 
 			local success, err = self:Load(name)
@@ -238,9 +240,9 @@ local SaveManager = {} do
 			end
 
 			self.Library:Notify(string.format('Loaded config %q', name))
-		end)
+		end })
 
-		section:AddButton('Overwrite config', function()
+		section:AddButton({ Text = 'Overwrite config', DoubleClick = true, Func = function()
 			local name = Options.SaveManager_ConfigList.Value
 
 			local success, err = self:Save(name)
@@ -249,7 +251,7 @@ local SaveManager = {} do
 			end
 
 			self.Library:Notify(string.format('Overwrote config %q', name))
-		end)
+		end })
 
 		section:AddButton('Refresh list', function()
 			Options.SaveManager_ConfigList:SetValues(self:RefreshConfigList())
