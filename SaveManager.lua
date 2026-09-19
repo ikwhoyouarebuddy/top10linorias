@@ -231,7 +231,7 @@ local SaveManager = {} do
 			Options.SaveManager_ConfigList:SetValue(nil)
 		end)
 
-		section:AddButton({ Text = 'Load config', DoubleClick = true, Func = function()
+		section:AddButton('Load config', function()
 			local name = Options.SaveManager_ConfigList.Value
 
 			local success, err = self:Load(name)
@@ -240,7 +240,7 @@ local SaveManager = {} do
 			end
 
 			self.Library:Notify(string.format('Loaded config %q', name))
-		end })
+		end)
 
 		section:AddButton({ Text = 'Overwrite config', DoubleClick = true, Func = function()
 			local name = Options.SaveManager_ConfigList.Value
