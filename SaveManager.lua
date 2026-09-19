@@ -257,21 +257,26 @@ local SaveManager = {} do
 			Options.SaveManager_ConfigList:SetValues(self:RefreshConfigList())
 			Options.SaveManager_ConfigList:SetValue(nil)
 		end)
---[[
+
 		section:AddButton('Set as autoload', function()
 			local name = Options.SaveManager_ConfigList.Value
+
+			if not name then
+				return self.Library:Notify('No config file is selected', 2)
+			end
+
 			writefile(self.Folder .. '/settings/autoload.txt', name)
-			SaveManager.AutoloadLabel:SetText('' .. name)
+			SaveManager.AutoloadLabel:SetText('Autoload: ' .. name)
 			self.Library:Notify(string.format('Set %q to auto load', name))
 		end)
 
-		SaveManager.AutoloadLabel = section:AddLabel('', true)
+		SaveManager.AutoloadLabel = section:AddLabel('Autoload: none', true)
 
 		if isfile(self.Folder .. '/settings/autoload.txt') then
 			local name = readfile(self.Folder .. '/settings/autoload.txt')
-			SaveManager.AutoloadLabel:SetText('' .. name)
+			SaveManager.AutoloadLabel:SetText('Autoload: ' .. name)
 		end
-]]
+
 		SaveManager:SetIgnoreIndexes({ 'SaveManager_ConfigList', 'SaveManager_ConfigName' })
 	end
 
