@@ -2971,13 +2971,20 @@ do
                 Parent = ring;
             });
 
+            local lit = not (type(result) == 'table' and result.Type == 'Toggle');
+
             local stroke = Library:Create('UIStroke', {
-                Color = Library.OutlineColor;
+                Color = lit and Library.AccentColor or Library.OutlineColor;
                 Thickness = 1;
                 Parent = ring;
             });
 
-            Library:AddToRegistry(stroke, { Color = 'OutlineColor' });
+            Library:AddToRegistry(stroke, { Color = lit and 'AccentColor' or 'OutlineColor' });
+
+            if lit then
+                clip.ZIndex = 6;
+                ring.ZIndex = 6;
+            end;
 
             local branch = { clip = clip; ring = ring; stroke = stroke };
             branches[row] = branch;
