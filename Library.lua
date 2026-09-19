@@ -539,7 +539,6 @@ do
             Parent = SatVibMapInner;
         });
 
-        -- Saturation: white on the left, fading out to leave the raw hue on the right.
         local SatVibWhite = Library:Create('Frame', {
             BackgroundColor3 = Color3.new(1, 1, 1);
             BorderSizePixel = 0;
@@ -556,7 +555,6 @@ do
             Parent = SatVibWhite;
         });
 
-        -- Value: clear at the top, fading into black at the bottom.
         local SatVibBlack = Library:Create('Frame', {
             BackgroundColor3 = Color3.new(0, 0, 0);
             BorderSizePixel = 0;
@@ -708,8 +706,6 @@ do
 
             Library:AddToRegistry(TransparencyBoxInner, { BorderColor3 = 'OutlineColor' });
 
-            -- Alpha: the picker colour at full strength on the right, fading
-            -- into the panel background on the left.
             TransparencyFade = Library:Create('Frame', {
                 BackgroundColor3 = Library.BackgroundColor;
                 BorderSizePixel = 0;
@@ -1464,8 +1460,6 @@ do
             Parent = Container;
         });
 
-        -- AbsoluteSize is still 0 on the frame the label is parented, so fall back
-        -- to the container and retry next frame rather than wrapping against 0 width.
         local function ResizeWrapped()
             local Width = TextLabel.AbsoluteSize.X;
 
