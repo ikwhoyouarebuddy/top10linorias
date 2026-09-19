@@ -530,31 +530,77 @@ do
         });
 
         local SatVibMap = Library:Create('ImageLabel', {
+            BackgroundColor3 = Color3.fromHSV(ColorPicker.Hue, 1, 1);
             BorderSizePixel = 0;
             Size = UDim2.new(1, 0, 1, 0);
             ZIndex = 18;
             Image = '';
+            ClipsDescendants = true;
             Parent = SatVibMapInner;
         });
 
-        local CursorOuter = Library:Create('ImageLabel', {
-            AnchorPoint = Vector2.new(0.5, 0.5);
-            Size = UDim2.new(0, 6, 0, 6);
-            BackgroundTransparency = 1;
-            Image = '';
-            ImageColor3 = Color3.new(0, 0, 0);
+        -- Saturation: white on the left, fading out to leave the raw hue on the right.
+        local SatVibWhite = Library:Create('Frame', {
+            BackgroundColor3 = Color3.new(1, 1, 1);
+            BorderSizePixel = 0;
+            Size = UDim2.new(1, 0, 1, 0);
+            ZIndex = 18;
+            Parent = SatVibMap;
+        });
+
+        Library:Create('UIGradient', {
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0);
+                NumberSequenceKeypoint.new(1, 1);
+            });
+            Parent = SatVibWhite;
+        });
+
+        -- Value: clear at the top, fading into black at the bottom.
+        local SatVibBlack = Library:Create('Frame', {
+            BackgroundColor3 = Color3.new(0, 0, 0);
+            BorderSizePixel = 0;
+            Size = UDim2.new(1, 0, 1, 0);
             ZIndex = 19;
             Parent = SatVibMap;
         });
 
-        local CursorInner = Library:Create('ImageLabel', {
+        Library:Create('UIGradient', {
+            Rotation = 90;
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1);
+                NumberSequenceKeypoint.new(1, 0);
+            });
+            Parent = SatVibBlack;
+        });
+
+        local CursorOuter = Library:Create('Frame', {
+            AnchorPoint = Vector2.new(0.5, 0.5);
+            Size = UDim2.new(0, 6, 0, 6);
+            BackgroundColor3 = Color3.new(0, 0, 0);
+            BorderSizePixel = 0;
+            ZIndex = 20;
+            Parent = SatVibMap;
+        });
+
+        Library:Create('UICorner', {
+            CornerRadius = UDim.new(1, 0);
+            Parent = CursorOuter;
+        });
+
+        local CursorInner = Library:Create('Frame', {
             Size = UDim2.new(0, CursorOuter.Size.X.Offset - 2, 0, CursorOuter.Size.Y.Offset - 2);
             Position = UDim2.new(0, 1, 0, 1);
-            BackgroundTransparency = 1;
-            Image = '';
-            ZIndex = 20;
+            BackgroundColor3 = Color3.new(1, 1, 1);
+            BorderSizePixel = 0;
+            ZIndex = 21;
             Parent = CursorOuter;
         })
+
+        Library:Create('UICorner', {
+            CornerRadius = UDim.new(1, 0);
+            Parent = CursorInner;
+        });
 
         local HueSelectorOuter = Library:Create('Frame', {
             BorderColor3 = Color3.new(0, 0, 0);
@@ -640,7 +686,7 @@ do
 
         Library:TrackTextbox(RgbBox);
 
-        local TransparencyBoxOuter, TransparencyBoxInner, TransparencyCursor;
+        local TransparencyBoxOuter, TransparencyBoxInner, TransparencyCursor, TransparencyFade;
 
         if Info.Transparency then
             TransparencyBoxOuter = Library:Create('Frame', {
@@ -662,12 +708,24 @@ do
 
             Library:AddToRegistry(TransparencyBoxInner, { BorderColor3 = 'OutlineColor' });
 
-            Library:Create('ImageLabel', {
-                BackgroundTransparency = 1;
+            -- Alpha: the picker colour at full strength on the right, fading
+            -- into the panel background on the left.
+            TransparencyFade = Library:Create('Frame', {
+                BackgroundColor3 = Library.BackgroundColor;
+                BorderSizePixel = 0;
                 Size = UDim2.new(1, 0, 1, 0);
-                Image = '';
                 ZIndex = 20;
                 Parent = TransparencyBoxInner;
+            });
+
+            Library:AddToRegistry(TransparencyFade, { BackgroundColor3 = 'BackgroundColor' });
+
+            Library:Create('UIGradient', {
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0);
+                    NumberSequenceKeypoint.new(1, 1);
+                });
+                Parent = TransparencyFade;
             });
 
             TransparencyCursor = Library:Create('Frame', {
@@ -828,11 +886,15 @@ do
         Library:AddToRegistry(RgbBox, { TextColor3 = 'FontColor', });
         Library:AddToRegistry(HueBox, { TextColor3 = 'FontColor', });
 
-        local SequenceTable = {};
-
-        for Hue = 0, 1, 0.1 do
-            table.insert(SequenceTable, ColorSequenceKeypoint.new(Hue, Color3.fromHSV(Hue, 1, 1)));
-        end;
+        local SequenceTable = {
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0));
+            ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0));
+            ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0));
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255));
+            ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255));
+            ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255));
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0));
+        };
 
         local HueSelectorGradient = Library:Create('UIGradient', {
             Color = ColorSequence.new(SequenceTable);
