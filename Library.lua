@@ -2123,6 +2123,18 @@ do
 
             Library.RegistryMap[ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
             Library.RegistryMap[ToggleInner].Properties.BorderColor3 = Toggle.Value and 'AccentColorDark' or 'OutlineColor';
+
+            local branch = Toggle.branch;
+
+            if branch then
+                local zindex = Toggle.Value and 6 or 5;
+
+                branch.stroke.Color = Toggle.Value and Library.AccentColor or Library.OutlineColor;
+                branch.clip.ZIndex = zindex;
+                branch.ring.ZIndex = zindex;
+
+                Library.RegistryMap[branch.stroke].Properties.Color = Toggle.Value and 'AccentColor' or 'OutlineColor';
+            end;
         end;
 
         function Toggle:OnChanged(Func)
@@ -2685,6 +2697,7 @@ do
                             Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
                             Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
 
+                            Library:UpdateDependencyBoxes();
                             Library:AttemptSave();
                         end;
                     end;
@@ -2750,6 +2763,7 @@ do
 
             Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
             Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
+            Library:UpdateDependencyBoxes();
         end;
 
         DropdownOuter.InputBegan:Connect(function(Input)
@@ -2822,10 +2836,17 @@ do
     function Funcs:AddDependencyBox()
         local Depbox = {
             Dependencies = {};
+            Shown = false;
         };
 
         local Groupbox = self;
         local Container = Groupbox.Container;
+
+        local indent, trunkx = 18, 6;
+        local depth = (Groupbox.depth or 0) + 1;
+        local branches = {};
+
+        Depbox.depth = depth;
 
         local Holder = Library:Create('Frame', {
             BackgroundTransparency = 1;
@@ -2836,7 +2857,8 @@ do
 
         local Frame = Library:Create('Frame', {
             BackgroundTransparency = 1;
-            Size = UDim2.new(1, 0, 1, 0);
+            Position = UDim2.new(0, indent, 0, 0);
+            Size = UDim2.new(1, -indent, 1, 0);
             Visible = true;
             Parent = Holder;
         });
@@ -2847,8 +2869,76 @@ do
             Parent = Frame;
         });
 
+        local function placebranches()
+            local y = 0;
+
+            for _, child in next, Frame:GetChildren() do
+                if child:IsA('GuiObject') and child.Visible then
+                    local branch = branches[child];
+
+                    if branch then
+                        local mid = math.floor(y + child.Size.Y.Offset / 2);
+
+                        branch.clip.Size = UDim2.new(0, indent - trunkx - 3, 0, mid + 1);
+                        branch.ring.Size = UDim2.new(0, indent + 10, 0, mid + 10);
+                    end;
+
+                    y = y + child.Size.Y.Offset;
+                end;
+            end;
+        end;
+
+        function Depbox.addbranch(row, result)
+            local clip = Library:Create('Frame', {
+                BackgroundTransparency = 1;
+                ClipsDescendants = true;
+                Position = UDim2.new(0, trunkx, 0, 0);
+                ZIndex = 5;
+                Parent = Holder;
+            });
+
+            local ring = Library:Create('Frame', {
+                BackgroundTransparency = 1;
+                Position = UDim2.new(0, 1, 0, -10);   -- stroke draws outside the edge
+                ZIndex = 5;
+                Parent = clip;
+            });
+
+            Library:Create('UICorner', {
+                CornerRadius = UDim.new(0, 4);
+                Parent = ring;
+            });
+
+            local stroke = Library:Create('UIStroke', {
+                Color = Library.OutlineColor;
+                Thickness = 1;
+                Parent = ring;
+            });
+
+            Library:AddToRegistry(stroke, { Color = 'OutlineColor' });
+
+            local branch = { clip = clip; ring = ring; stroke = stroke };
+            branches[row] = branch;
+
+            if type(result) == 'table' and result.Type == 'Toggle' then
+                local label = result.TextLabel;
+
+                label.Size = UDim2.new(0, label.Size.X.Offset - indent * depth, 1, 0);
+                result.branch = branch;
+                result:Display();
+            elseif type(result) == 'table' and result.Type == 'Slider' then
+                result.MaxSize = result.MaxSize - indent * depth;
+                result:Display();
+            end;
+
+            placebranches();
+        end;
+
         function Depbox:Resize()
-            Holder.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y);
+            if not Depbox.Anim then
+                Holder.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y);
+            end;
+            placebranches();
             Groupbox:Resize();
         end;
 
@@ -2860,31 +2950,86 @@ do
             Depbox:Resize();
         end);
 
-        function Depbox:Update()
+        function Depbox:Animate(Show)
+            local Anim = {};
+            local From = Holder.Visible and Holder.Size.Y.Offset or 0;
+
+            Depbox.Anim = Anim;
+            Holder.ClipsDescendants = true;
+            Holder.Size = UDim2.new(1, 0, 0, From);
+            Holder.Visible = true;
+
+            task.spawn(function()
+                local T = 0;
+
+                while T < 1 do
+                    T = math.min(T + RunService.RenderStepped:Wait() / 0.15, 1);
+                    if Depbox.Anim ~= Anim then return; end;
+
+                    local To = Show and Layout.AbsoluteContentSize.Y or 0;
+                    local Eased = TweenService:GetValue(T, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+                    Holder.Size = UDim2.new(1, 0, 0, From + (To - From) * Eased);
+                    Groupbox:Resize();
+                end;
+
+                Depbox.Anim = nil;
+                Holder.ClipsDescendants = false;
+                Holder.Visible = Show;
+                Depbox:Resize();
+            end);
+        end;
+
+        function Depbox:Update(Instant)
+            local Show = true;
+
             for _, Dependency in next, Depbox.Dependencies do
                 local Elem = Dependency[1];
                 local Value = Dependency[2];
 
-                if Elem.Type == 'Toggle' and Elem.Value ~= Value then
-                    Holder.Visible = false;
-                    Depbox:Resize();
-                    return;
+                if type(Elem) == 'function' then
+                    if not Elem() then Show = false; break; end;
+                elseif Elem.Type == 'Toggle' then
+                    if Elem.Value ~= Value then Show = false; break; end;
+                elseif Elem.Type == 'Dropdown' then
+                    local Current = Elem.Value;
+                    local Match = false;
+
+                    if type(Value) == 'table' then
+                        for _, V in next, Value do
+                            if (Elem.Multi and Current[V]) or Current == V then Match = true; break; end;
+                        end;
+                    elseif Elem.Multi then
+                        Match = Current[Value] == true;
+                    else
+                        Match = Current == Value;
+                    end;
+
+                    if not Match then Show = false; break; end;
                 end;
             end;
 
-            Holder.Visible = true;
-            Depbox:Resize();
+            if Depbox.Shown == Show then return; end;
+            Depbox.Shown = Show;
+
+            if Instant then
+                Depbox.Anim = nil;
+                Holder.ClipsDescendants = false;
+                Holder.Visible = Show;
+                Depbox:Resize();
+            else
+                Depbox:Animate(Show);
+            end;
         end;
 
         function Depbox:SetupDependencies(Dependencies)
             for _, Dependency in next, Dependencies do
                 assert(type(Dependency) == 'table', 'SetupDependencies: Dependency is not of type `table`.');
                 assert(Dependency[1], 'SetupDependencies: Dependency is missing element argument.');
-                assert(Dependency[2] ~= nil, 'SetupDependencies: Dependency is missing value argument.');
+                assert(type(Dependency[1]) == 'function' or Dependency[2] ~= nil, 'SetupDependencies: Dependency is missing value argument.');
             end;
 
             Depbox.Dependencies = Dependencies;
-            Depbox:Update();
+            Depbox:Update(true);
         end;
 
         Depbox.Container = Frame;
@@ -2894,6 +3039,48 @@ do
         table.insert(Library.DependencyBoxes, Depbox);
 
         return Depbox;
+    end;
+
+    function Funcs:dep(Idx, Value)
+        local Stack = rawget(self, 'DepStack');
+        if not Stack then Stack = {}; rawset(self, 'DepStack', Stack); end;
+        if Idx == nil then table.remove(Stack); return; end;
+
+        local Elem = type(Idx) == 'string' and (Toggles[Idx] or Options[Idx]) or Idx;
+        local Box = (Stack[#Stack] or self):AddDependencyBox();
+        Box:SetupDependencies({ { Elem, Value == nil and true or Value } });
+        table.insert(Stack, Box);
+    end;
+
+    local branchrows = {
+        AddToggle = true;
+        AddSlider = true;
+        AddDropdown = true;
+        AddLabel = true;
+        AddButton = true;
+        AddInput = true;
+    };
+
+    for Name, Func in next, Funcs do
+        if Name:sub(1, 3) == 'Add' then
+            Funcs[Name] = function(self, ...)
+                local Stack = rawget(self, 'DepStack');
+                local target = Stack and Stack[#Stack] or self;
+                local addbranch = branchrows[Name] and rawget(target, 'addbranch');
+
+                if not addbranch then
+                    return Func(target, ...);
+                end;
+
+                local count = #target.Container:GetChildren();
+                local result = Func(target, ...);
+                local row = target.Container:GetChildren()[count + 1];
+
+                if row then addbranch(row, result); end;
+
+                return result;
+            end;
+        end;
     end;
 
     BaseGroupbox.__index = Funcs;
