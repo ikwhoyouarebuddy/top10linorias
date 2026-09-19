@@ -122,31 +122,10 @@ local SaveManager = {} do
 		local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
 		if not success then return false, 'decode error' end
 
-		local applied, missing = 0, {}
-
 		for _, option in next, decoded.objects do
-			local parser = self.Parser[option.type]
-
-			if parser then
-				-- The parsers silently skip an index that does not exist yet, so check
-				-- here instead: a config loaded before the UI is built would otherwise
-				-- apply nothing and still report success.
-				local registry = option.type == 'Toggle' and Toggles or Options
-
-				if registry[option.idx] then
-					applied = applied + 1
-					task.spawn(function() parser.Load(option.idx, option) end) -- task.spawn() so the config loading wont get stuck.
-				else
-					table.insert(missing, option.idx)
-				end
+			if self.Parser[option.type] then
+				task.spawn(function() self.Parser[option.type].Load(option.idx, option) end) -- task.spawn() so the config loading wont get stuck.
 			end
-		end
-
-		self.LastLoadApplied = applied
-		self.LastLoadMissing = missing
-
-		if applied == 0 and #missing > 0 then
-			return false, string.format('no matching options (%d unknown, UI not built yet?)', #missing)
 		end
 
 		if self.Library and self.Library.Window then
@@ -211,26 +190,16 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:LoadAutoloadConfig()
-		if not isfile(self.Folder .. '/settings/autoload.txt') then
-			return
-		end
+		if isfile(self.Folder .. '/settings/autoload.txt') then
+			local name = readfile(self.Folder .. '/settings/autoload.txt')
 
-		local name = readfile(self.Folder .. '/settings/autoload.txt'):match('^%s*(.-)%s*$')
-
-		if name == '' then
-			return
-		end
-
-		-- Deferred so this still works when a script calls it partway through
-		-- building its tabs: every option exists by the time the config applies.
-		task.defer(function()
 			local success, err = self:Load(name)
 			if not success then
 				return self.Library:Notify('Failed to load autoload config: ' .. err)
 			end
 
 			self.Library:Notify(string.format('Auto loaded config %q', name))
-		end)
+		end
 	end
 
 
@@ -291,21 +260,16 @@ local SaveManager = {} do
 
 		section:AddButton('Set as autoload', function()
 			local name = Options.SaveManager_ConfigList.Value
-
-			if not name then
-				return self.Library:Notify('No config file is selected', 2)
-			end
-
 			writefile(self.Folder .. '/settings/autoload.txt', name)
-			SaveManager.AutoloadLabel:SetText('Autoload: ' .. name)
+			SaveManager.AutoloadLabel:SetText('' .. name)
 			self.Library:Notify(string.format('Set %q to auto load', name))
 		end)
 
-		SaveManager.AutoloadLabel = section:AddLabel('Autoload: none', true)
+		SaveManager.AutoloadLabel = section:AddLabel('', true)
 
 		if isfile(self.Folder .. '/settings/autoload.txt') then
-			local name = readfile(self.Folder .. '/settings/autoload.txt'):match('^%s*(.-)%s*$')
-			SaveManager.AutoloadLabel:SetText('Autoload: ' .. name)
+			local name = readfile(self.Folder .. '/settings/autoload.txt')
+			SaveManager.AutoloadLabel:SetText('' .. name)
 		end
 
 		SaveManager:SetIgnoreIndexes({ 'SaveManager_ConfigList', 'SaveManager_ConfigName' })
